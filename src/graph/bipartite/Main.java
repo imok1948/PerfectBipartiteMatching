@@ -4,28 +4,59 @@ import java.util.*;
 
 public class Main
 {
+ 
+ private static final boolean DEBUG = false;
+ 
  private static final boolean DISCONNECTED = false;
  private static final boolean CONNECTED = true;
  
  static HashSet<String> matchedEdges = new LinkedHashSet<>();
  static HashSet<Integer> matchedVertices = new LinkedHashSet<>();
  
+ public static void main2(String[] args)
+ {
+  getRandomBipartiteGraph(6);
+ }
+ 
  public static void main(String[] args)
  {
-  boolean[][] matrix = getGraph();
   
+  boolean[][] matrix = getRandomBipartiteGraph(500);
   int n = matrix.length;
-  for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; )
+  
+  if(DEBUG)
   {
+   for(boolean[] row : matrix)
+   {
+    for(boolean b : row)
+    {
+     System.out.print((b == true ? 1 : 0) + " ");
+    }
+    System.out.println();
+   }
+  }
+  
+  int count = 0;
+  for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; count++)
+  {
+   if(count!=0 && count%10==0)
+   {
+    System.out.println("Current Size : "+augmentedPath.size());
+   }
    
-   System.out.println("Augmented Path : ");
-   printEdges(augmentedPath, n);
-   
+   if(DEBUG)
+   {
+    System.out.println("Augmented Path : ");
+    printEdges(augmentedPath, n);
+   }
    updateVertices(augmentedPath, n);
    
-   System.out.println("New Matched Edges : ");
-   printEdges(matchedEdges, n);
-   System.out.println();
+   if(DEBUG)
+   {
+    System.out.println("New Matched Edges : ");
+    printEdges(matchedEdges, n);
+    System.out.println();
+   }
    
    augmentedPath = getAugmentedPath(matrix);
   }
@@ -106,6 +137,10 @@ public class Main
    {
     stack.pop();
     index.pop();
+    if(stack.size() == 0)
+    {
+     return null;//We have started from this unmatched vertex, but it could not find any suitable path from it, hence perfect matching cannot be found
+    }
     currentlyMatchedEdges.pop();
    }
    
@@ -125,9 +160,14 @@ public class Main
    }
    else
    {
-    currentlyMatchedEdges.pop();
     stack.pop();
     index.pop();
+    
+    if(stack.size() == 0)
+    {
+     return null;//We have started from this unmatched vertex, but it could not find any suitable path from it, hence perfect matching cannot be found
+    }
+    currentlyMatchedEdges.pop();
    }
   }
   return null;
@@ -199,7 +239,20 @@ public class Main
  
  public static boolean[][] getRandomBipartiteGraph(int nodes)
  {
-  boolean[][] matrix = new boolean[nodes][];
+  boolean[][] matrix = new boolean[nodes][nodes];
+  
+  Random random = new Random();
+  int connections = 0;
+  int i, j;
+  for(i = 0; i < nodes / 2; i++)
+  {
+   connections = (random.nextInt(nodes / 2) + 1);
+   for(j = 0; j < connections; j++)
+   {
+    matrix[i][nodes / 2 + j] = CONNECTED;
+    matrix[nodes / 2 + j][i] = CONNECTED;
+   }
+  }
   return matrix;
  }
  
