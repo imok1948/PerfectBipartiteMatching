@@ -13,14 +13,8 @@ public class Main
  static HashSet<String> matchedEdges = new LinkedHashSet<>();
  static HashSet<Integer> matchedVertices = new LinkedHashSet<>();
  
- public static void main2(String[] args)
- {
-  getRandomBipartiteGraph(6);
- }
- 
  public static void main(String[] args)
  {
-  
   boolean[][] matrix = getRandomBipartiteGraph(500);
   int n = matrix.length;
   
