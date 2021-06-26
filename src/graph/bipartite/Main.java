@@ -39,9 +39,9 @@ public class Main
   int count = 0;
   for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; count++)
   {
-   if(count!=0 && count%10==0)
+   if(count != 0 && count % 10 == 0)
    {
-    System.out.println("Current Size : "+augmentedPath.size());
+    System.out.println("Current Size : " + augmentedPath.size());
    }
    
    if(DEBUG)
@@ -72,31 +72,28 @@ public class Main
   printEdges(matchedEdges, n);
  }
  
- public static void printEdges(HashSet<String> edges, int n)
- {
-  for(String edge : edges)
-  {
-   int u = Integer.parseInt(edge.split(" ")[0]);
-   int v = Integer.parseInt(edge.split(" ")[1]) - n / 2;
-   System.out.println(u + "----" + getString(v));
-  }
- }
  
  public static HashSet<String> getAugmentedPath(boolean[][] matrix)
  {
+  
+  //Try to do DFS
+  //Backtrack if you found dead end
+  //Return if you found an unmatched vertex with alternating path of odd length
   Stack<Integer> stack = new Stack<>();
   Stack<Integer> index = new Stack<>();
   HashSet<Integer> visited = new LinkedHashSet<>();
   Stack<String> currentlyMatchedEdges = new Stack<>();
   
   int n = matrix.length;
-  int i, j;
+  int i;
   
+  //Start from an unmatched vertex
   for(i = 0; i < n; i++)
   {
    if(!matchedVertices.contains(i))
    {
     stack.push(i);
+    //Index to keep track current neighbour of root
     index.push(0);
     break;
    }
@@ -106,18 +103,25 @@ public class Main
   {
    int root = stack.peek();
    visited.add(root);
+   
+   //From the root node, try to find an unvisited vertex
    while(index.peek() < n && (matrix[root][index.peek()] == DISCONNECTED || visited.contains(index.peek())))
    {
     index.push(index.pop() + 1);
    }
    
-   
+   //If index < n means you successfully find an unvisited vertex
    if(index.peek() < n)
    {
+    
+    //If the vertex is unmatched == you successfully got an alternating path starting and ending with unmatched vertex
+    //Yes, the path length is odd (With even vertex)
     if(!matchedVertices.contains(index.peek()))
     {
-     //Finish here
+     //Finish here by putting current edge
      currentlyMatchedEdges.push(root + " " + index.peek());
+     
+     //I am returning hashset, even it is in loop, it is the last iteration of loop hence it will not increase TC
      HashSet<String> augmentPath = new HashSet<>();
      for(String edge : currentlyMatchedEdges)
      {
@@ -127,6 +131,7 @@ public class Main
     }
     else
     {
+     //If current vertex is matched, then there exist a matched path from this vertex, add the edge from root to current (This is unmatched edge)
      currentlyMatchedEdges.push(root + " " + index.peek());
      stack.push(index.peek());//Put the next vertex to visit
      index.push(index.pop() + 1);//If path not found I will start from the next vertex
@@ -135,6 +140,8 @@ public class Main
    }
    else
    {
+    //If index goes out of bound, it means you were not able to find any unvisited vertex (Neither matched nor unmatched)
+    //Go back to previous checkpoint
     stack.pop();
     index.pop();
     if(stack.size() == 0)
@@ -145,6 +152,7 @@ public class Main
    }
    
    
+   //Same as mentioned above, but this edge would be matched edge
    root = stack.peek();
    while(index.peek() < n && (matrix[root][index.peek()] == DISCONNECTED || visited.contains(index.peek()) || matchedEdges.contains(index.peek() + " " + root) == false))
    {
@@ -160,6 +168,9 @@ public class Main
    }
    else
    {
+    
+    //If index goes out of bound, it means you were not able to find any unvisited vertex (Neither matched nor unmatched)
+    //Go back to previous checkpoint
     stack.pop();
     index.pop();
     
@@ -175,36 +186,41 @@ public class Main
  
  public static void updateVertices(HashSet<String> augmentedPath, int n)
  {
-  HashSet<String> mExcludeP = new HashSet<>();
-  HashSet<String> pExcludeM = new HashSet<>();
+  HashSet<String> matchingExcludingAugmentedPath = new HashSet<>();
+  HashSet<String> augmentedPathExcludingMatching = new HashSet<>();
   
+  
+  //Symmetric difference matchedEdges - augmentedPath
   for(String edge : matchedEdges)
   {
    if(!augmentedPath.contains(edge))
    {
-    mExcludeP.add(edge);
+    matchingExcludingAugmentedPath.add(edge);
    }
   }
-  
+  //Symmetric difference augmentedPath - matchedEdges
   for(String edge : augmentedPath)
   {
    if(!matchedEdges.contains(edge))
    {
-    pExcludeM.add(edge);
+    augmentedPathExcludingMatching.add(edge);
    }
   }
   
+  //Union both difference to get complete symmetric difference
   matchedEdges = new LinkedHashSet<>();
-  for(String edge : mExcludeP)
+  for(String edge : matchingExcludingAugmentedPath)
   {
    matchedEdges.add(edge);
   }
   
-  for(String edge : pExcludeM)
+  for(String edge : augmentedPathExcludingMatching)
   {
    matchedEdges.add(edge);
   }
   
+  
+  //Update current matching
   matchedVertices = new LinkedHashSet<>();
   for(String edge : matchedEdges)
   {
@@ -215,8 +231,53 @@ public class Main
   }
  }
  
+ public static void printEdges(HashSet<String> edges, int n)
+ {
+  //Utility function to print map
+  //Integers are vertices of set U
+  //String are vertices of set V
+  
+  for(String edge : edges)
+  {
+   int u = Integer.parseInt(edge.split(" ")[0]);
+   int v = Integer.parseInt(edge.split(" ")[1]) - n / 2;
+   System.out.println((u + 1) + "----" + getString(v));
+  }
+ }
+ 
+ public static boolean[][] getRandomBipartiteGraph(int nodes)
+ {
+  /*
+   * Utility function to generate a bipartite graph (May not be connected)
+   * nodes ==> Total number of nodes in the graph (|U+V|) */
+  
+  boolean[][] matrix = new boolean[nodes][nodes];
+  
+  Random random = new Random();
+  int connections = 0;
+  int i, j;
+  
+  //Iterate over all nodes in set U
+  for(i = 0; i < nodes / 2; i++)
+  {
+   //It have to have at least 1 connection with vertex in set V
+   connections = (random.nextInt(nodes / 2) + 1);
+   for(j = 0; j < connections; j++)
+   {
+    matrix[i][nodes / 2 + j] = CONNECTED;
+    matrix[nodes / 2 + j][i] = CONNECTED;
+   }
+  }
+  return matrix;
+ }
+ 
  public static boolean[][] getGraph()
  {
+  /*
+   * Utility function to feed input manual adjacency matrix
+   * Not in use now
+   * */
+  
   String[] matrixString = {
    "00001101", "00001100", "00001110", "00000100", "11100000", "11110000", "00100000", "10000000"
   };
@@ -232,25 +293,6 @@ public class Main
    for(int j = 0; j < matrixString.length; j++)
    {
     matrix[i][j] = matrixString[i].charAt(j) == '1';
-   }
-  }
-  return matrix;
- }
- 
- public static boolean[][] getRandomBipartiteGraph(int nodes)
- {
-  boolean[][] matrix = new boolean[nodes][nodes];
-  
-  Random random = new Random();
-  int connections = 0;
-  int i, j;
-  for(i = 0; i < nodes / 2; i++)
-  {
-   connections = (random.nextInt(nodes / 2) + 1);
-   for(j = 0; j < connections; j++)
-   {
-    matrix[i][nodes / 2 + j] = CONNECTED;
-    matrix[nodes / 2 + j][i] = CONNECTED;
    }
   }
   return matrix;
