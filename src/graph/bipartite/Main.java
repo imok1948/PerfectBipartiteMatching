@@ -4,69 +4,54 @@ import java.util.*;
 
 public class Main
 {
+ private static final boolean DISCONNECTED = false;
+ private static final boolean CONNECTED = true;
+ 
  static HashSet<String> matchedEdges = new LinkedHashSet<>();
  static HashSet<Integer> matchedVertices = new LinkedHashSet<>();
  
- static String[] setU = "1 2 3 4 5 6 7 8 9 0".split(" ");
- static String[] setV = "A B C D E F G H I J".split(" ");
- 
  public static void main(String[] args)
  {
-  int i, j;
-  int[][] matrix = getGraph();
+  boolean[][] matrix = getGraph();
   
   int n = matrix.length;
   for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; )
   {
    
-   System.out.print("P : ");
-   printer(augmentedPath);
+   System.out.println("Augmented Path : ");
+   printEdges(augmentedPath, n);
    
    updateVertices(augmentedPath, n);
    
-   System.out.print("M : ");
-   printer(matchedEdges);
+   System.out.println("New Matched Edges : ");
+   printEdges(matchedEdges, n);
    System.out.println();
    
    augmentedPath = getAugmentedPath(matrix);
   }
   
-  System.out.println("Matched Edges:");
-  printMatchedEdges(n);
+  if(matchedEdges.size() == n / 2)
+  {
+   System.out.println("Perfect Matching found with edges : ");
+  }
+  else
+  {
+   System.out.println("Perfect Matching not found but Maximum Matching is : ");
+  }
+  printEdges(matchedEdges, n);
  }
  
- 
- public static void printMatchedEdges(int n)
+ public static void printEdges(HashSet<String> edges, int n)
  {
-  for(String edge : matchedEdges)
+  for(String edge : edges)
   {
    int u = Integer.parseInt(edge.split(" ")[0]);
    int v = Integer.parseInt(edge.split(" ")[1]) - n / 2;
-   System.out.println(setU[u] + "----" + setV[v]);
+   System.out.println(u + "----" + getString(v));
   }
  }
  
- public static void printAugmentedPath(HashSet<String> augmentedPath, int n)
- {
-  for(String edge : augmentedPath)
-  {
-   int u = Integer.parseInt(edge.split(" ")[0]);
-   int v = Integer.parseInt(edge.split(" ")[1]) - n / 2;
-   System.out.println(setU[u] + "----" + setV[v]);
-  }
- }
- 
- public static void printer(HashSet<String> hashSet)
- {
-  for(String s : hashSet)
-  {
-   System.out.print(s + ", ");
-  }
-  System.out.println();
- }
- 
- 
- public static HashSet<String> getAugmentedPath(int[][] matrix)
+ public static HashSet<String> getAugmentedPath(boolean[][] matrix)
  {
   Stack<Integer> stack = new Stack<>();
   Stack<Integer> index = new Stack<>();
@@ -90,7 +75,7 @@ public class Main
   {
    int root = stack.peek();
    visited.add(root);
-   while(index.peek() < n && (matrix[root][index.peek()] == 0 || visited.contains(index.peek())))
+   while(index.peek() < n && (matrix[root][index.peek()] == DISCONNECTED || visited.contains(index.peek())))
    {
     index.push(index.pop() + 1);
    }
@@ -124,21 +109,10 @@ public class Main
     currentlyMatchedEdges.pop();
    }
    
-   if(currentlyMatchedEdges.size() != 0)
-   {
-    System.out.println("P1 : " + currentlyMatchedEdges.peek());
-   }
    
    root = stack.peek();
-   while(index.peek() < n && (matrix[root][index.peek()] == 0 || visited.contains(index.peek()) || matchedEdges.contains(index.peek() + " " + root) == false))
+   while(index.peek() < n && (matrix[root][index.peek()] == DISCONNECTED || visited.contains(index.peek()) || matchedEdges.contains(index.peek() + " " + root) == false))
    {
-    //    System.out.println();
-    //    System.out.println("Try2 : " + root + " " + index.peek());
-    //    System.out.println("Neighbour : " + (matrix[root][index.peek()] == 0));
-    //    System.out.println("Visited : " + visited.contains(index.peek()));
-    //    System.out.println("Matched : " + (matchedEdges.contains(index.peek() + " " + root)));
-    //    System.out.println();
-    
     index.push(index.pop() + 1);
    }
    
@@ -155,11 +129,6 @@ public class Main
     stack.pop();
     index.pop();
    }
-   
-   //   if(currentlyMatchedEdges.size() != 0)
-   //   {
-   //    System.out.println("P2 : " + currentlyMatchedEdges.peek());
-   //   }
   }
   return null;
  }
@@ -206,7 +175,7 @@ public class Main
   }
  }
  
- public static int[][] getGraph()
+ public static boolean[][] getGraph()
  {
   String[] matrixString = {
    "00001101", "00001100", "00001110", "00000100", "11100000", "11110000", "00100000", "10000000"
@@ -215,18 +184,24 @@ public class Main
   matrixString = new String[]{
    "0000011010", "0000011011", "0000001100", "0000001001", "0000011000", "1100100000", "1111100000", "0010000000", "1100000000", "0101000000"
   };
-  int[][] matrix = new int[matrixString.length][];
+  
+  boolean[][] matrix = new boolean[matrixString.length][];
   for(int i = 0; i < matrixString.length; i++)
   {
-   matrix[i] = new int[matrixString.length];
+   matrix[i] = new boolean[matrixString.length];
    for(int j = 0; j < matrixString.length; j++)
    {
-    matrix[i][j] = Integer.parseInt("" + matrixString[i].charAt(j));
+    matrix[i][j] = matrixString[i].charAt(j) == '1';
    }
   }
   return matrix;
  }
  
+ public static boolean[][] getRandomBipartiteGraph(int nodes)
+ {
+  boolean[][] matrix = new boolean[nodes][];
+  return matrix;
+ }
  
  static private String getString(int n)
  {
