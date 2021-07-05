@@ -1,71 +1,177 @@
 package graph.bipartite;
 
+import java.io.*;
 import java.util.*;
 
 public class Main
 {
+ private static final boolean PRINT_MATCHED_EDGES = false;
+ private static TimerUtility timer = new TimerUtility();
  
  private static final boolean DEBUG = false;
- 
  private static final boolean DISCONNECTED = false;
  private static final boolean CONNECTED = true;
+ private static final boolean PRINT_MATRIX = false;
  
  static HashSet<String> matchedEdges = new LinkedHashSet<>();
  static HashSet<Integer> matchedVertices = new LinkedHashSet<>();
  
  public static void main(String[] args)
  {
-  boolean[][] matrix = getRandomBipartiteGraph(500);
-  int n = matrix.length;
-  
-  if(DEBUG)
+  for(int i = 100; i < 200; i += 2)
   {
+   run(i);
+   matchedEdges = new LinkedHashSet<>();
+   matchedVertices = new LinkedHashSet<>();
+  }
+ }
+ 
+ public static void run(int nodes)
+ {
+  /*
+  nodes = Total nodes in graph (|U|+|V|)
+ */
+  
+  long timeTaken = 0;
+  int totalEdges = 0;
+  
+  while(matchedEdges.size() != (nodes / 2))
+  {
+   boolean[][] matrix = getRandomBipartiteGraph(nodes);
+   int n = matrix.length;
+   
+   if(PRINT_MATRIX)
+   {
+    for(boolean[] row : matrix)
+    {
+     for(boolean b : row)
+     {
+      if(b == CONNECTED)
+      {
+       System.out.print("1 ");
+       totalEdges += 1;
+      }
+      else
+      {
+       System.out.print("0 ");
+      }
+      //System.out.print((b == true ? 1 : 0) + " ");
+     }
+     System.out.println();
+    }
+   }
+   
+   
    for(boolean[] row : matrix)
    {
     for(boolean b : row)
     {
-     System.out.print((b == true ? 1 : 0) + " ");
+     if(b == CONNECTED)
+     {
+      totalEdges += 1;
+     }
     }
-    System.out.println();
-   }
-  }
-  
-  int count = 0;
-  for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; count++)
-  {
-   if(count != 0 && count % 10 == 0)
-   {
-    System.out.println("Current Size : " + augmentedPath.size());
    }
    
-   if(DEBUG)
-   {
-    System.out.println("Augmented Path : ");
-    printEdges(augmentedPath, n);
-   }
-   updateVertices(augmentedPath, n);
+   int count = 0;
    
-   if(DEBUG)
+   timer.startTimer();
+   for(HashSet<String> augmentedPath = getAugmentedPath(matrix); augmentedPath != null && augmentedPath.size() != 0; count++)
    {
-    System.out.println("New Matched Edges : ");
+    if(count != 0 && count % 10 == 0)
+    {
+     System.out.print("Nodes : " + nodes + " ");
+     System.out.println("Current Size : " + augmentedPath.size());
+    }
+    
+    if(DEBUG)
+    {
+     System.out.println("Augmented Path : ");
+     printEdges(augmentedPath, n);
+    }
+    updateVertices(augmentedPath, n);
+    
+    if(DEBUG)
+    {
+     System.out.println("New Matched Edges : ");
+     printEdges(matchedEdges, n);
+     System.out.println();
+    }
+    
+    augmentedPath = getAugmentedPath(matrix);
+   }
+   
+   
+   timer.endTimer();
+   
+   System.out.println("Nodes : " + nodes);
+   
+   if(matchedEdges.size() == n / 2)
+   {
+    System.out.println("Perfect Matching found with edges : ");
+   }
+   else
+   {
+    System.out.println("Perfect Matching not found but Maximum Matching is : ");
+   }
+   
+   if(PRINT_MATCHED_EDGES)
+   {
     printEdges(matchedEdges, n);
-    System.out.println();
    }
-   
-   augmentedPath = getAugmentedPath(matrix);
+   timeTaken = timer.getTimeDifference();
   }
   
-  if(matchedEdges.size() == n / 2)
-  {
-   System.out.println("Perfect Matching found with edges : ");
-  }
-  else
-  {
-   System.out.println("Perfect Matching not found but Maximum Matching is : ");
-  }
-  printEdges(matchedEdges, n);
+  System.out.println("Total Vertex |U| (in one side): " + nodes / 2);
+  System.out.println("Total Edges : " + totalEdges);
+  System.out.println("Time Taken  :  " + timeTaken);
+  
+  writeToCSV(totalEdges, nodes / 2, timeTaken);
  }
  
+ 
+ public static void writeToCSV(int totalEdges, int nodes, long timeTaken)
+ {
+  String fileName = "datasheet.csv";
+  String row = nodes + "," + totalEdges + "," + timeTaken + "\n";
+  
+  File file = new File(fileName, "w+");
+  BufferedWriter stream;
+  
+  
+  while(true)
+  {
+   try
+   {
+    stream = new BufferedWriter(new FileWriter(fileName, true));
+    stream.write(row);
+    stream.close();
+    break;
+   }
+   catch(IOException ioException)
+   {
+    System.out.println("Writing again");
+   }
+  }
+  
+  
+ }
+ 
+ public static int countGraphEdges(boolean[][] matrix)
+ {
+  int count = 0;
+  for(boolean[] row : matrix)
+  {
+   for(boolean cell : row)
+   {
+    if(cell == CONNECTED)
+    {
+     count += 1;
+    }
+   }
+  }
+  return count / 2;
+ }
  
  public static HashSet<String> getAugmentedPath(boolean[][] matrix)
  {
@@ -192,6 +298,8 @@ public class Main
     matchingExcludingAugmentedPath.add(edge);
    }
   }
+  
+  
   //Symmetric difference augmentedPath - matchedEdges
   for(String edge : augmentedPath)
   {
@@ -255,11 +363,13 @@ public class Main
   for(i = 0; i < nodes / 2; i++)
   {
    //It have to have at least 1 connection with vertex in set V
-   connections = (random.nextInt(nodes / 2) + 1);
-   for(j = 0; j < connections; j++)
+   connections = (random.nextInt(nodes / 3) + 1);
+   
+   for(j = 0; j < connections && j < nodes / 2; j++)
    {
-    matrix[i][nodes / 2 + j] = CONNECTED;
-    matrix[nodes / 2 + j][i] = CONNECTED;
+    int neighbour = random.nextInt(nodes / 2);
+    matrix[i][nodes / 2 + neighbour] = CONNECTED;
+    matrix[nodes / 2 + neighbour][i] = CONNECTED;
    }
   }
   return matrix;
